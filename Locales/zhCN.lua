@@ -20,9 +20,8 @@ NS:RegisterLocale("zhCN", {
     --------------------------------------------------------------------
     -- General / Addon Info
     --------------------------------------------------------------------
-    ["ADDON_NAME"]              = "幻色龙",
     ["ADDON_LOADED"]            = "幻色龙 v%s 已加载。输入 /chromatix 查看帮助。",
-    ["ADDON_DESCRIPTION"]       = "根据当前专精自动切换装备套装。",
+    ["ADDON_DESCRIPTION"]       = "根据当前专精自动切换装备套装。\n输入 /chromatix 或 /ctx 查看命令列表。",
 
     --------------------------------------------------------------------
     -- Slash Commands
@@ -33,6 +32,7 @@ NS:RegisterLocale("zhCN", {
     ["CMD_HELP_SWAP"]           = "/chromatix swap — 手动触发当前专精的装备切换。",
     ["CMD_HELP_DEBUG"]          = "/chromatix debug — 切换调试模式。",
     ["CMD_HELP_RESET"]          = "/chromatix reset — 重置当前角色设置。",
+    ["CMD_HELP_SAVE"]           = "/chromatix save — 将当前装备保存到当前专精对应的套装中。",
     ["CMD_UNKNOWN"]             = "未知命令：%s。输入 /chromatix 查看帮助。",
 
     --------------------------------------------------------------------
@@ -52,6 +52,7 @@ NS:RegisterLocale("zhCN", {
     ["EQUIP_SET_CREATED"]       = "已创建新装备套装 \"%s\"，图标：%s。",
     ["EQUIP_SET_CREATE_FAILED"] = "创建装备套装 \"%s\" 失败。",
     ["EQUIP_SET_ALREADY_EXISTS"]= "装备套装 \"%s\" 已存在。",
+    ["EQUIP_SET_SAVED"]         = "装备套装 \"%s\" 已更新。",
     ["EQUIP_COMBAT_DEFERRED"]   = "战斗中 — 装备切换已延迟至战斗结束。",
     ["EQUIP_COMBAT_RESUMED"]    = "战斗结束 — 正在执行延迟的装备切换。",
     ["EQUIP_MAX_SETS"]          = "装备套装数量已达上限，无法创建新套装。",
@@ -67,19 +68,15 @@ NS:RegisterLocale("zhCN", {
     -- Options Panel
     --------------------------------------------------------------------
     ["OPTIONS_TITLE"]           = "幻色龙 设置",
-    ["OPTIONS_GENERAL"]         = "常规",
     ["OPTIONS_NAMING_MODE"]     = "套装命名方式",
     ["OPTIONS_NAMING_DESC"]     = "选择装备套装名称使用英文专精名（如\"Retribution\"）还是本地化专精名（如\"惩戒\"）。",
+    ["OPTIONS_AUTO_SWAP"]       = "自动切换装备",
+    ["OPTIONS_AUTO_SWAP_DESC"]  = "切换专精时自动装备关联的套装。",
     ["OPTIONS_NAMING_ENGLISH"]  = "英文",
     ["OPTIONS_NAMING_LOCALIZED"]= "本地化名称",
     ["OPTIONS_DEBUG_MODE"]      = "调试模式",
     ["OPTIONS_DEBUG_DESC"]      = "在聊天窗口中显示详细的调试信息。",
-    ["OPTIONS_AUTO_SWAP"]       = "专精切换时自动更换装备",
-    ["OPTIONS_AUTO_SWAP_DESC"]  = "当你切换专精时，自动装备关联的装备套装。",
-    ["OPTIONS_RESET"]           = "重置角色设置",
-    ["OPTIONS_RESET_DESC"]      = "清除此角色的所有专精与套装的关联配置。",
-    ["OPTIONS_RESET_CONFIRM"]   = "确定要重置此角色的所有幻色龙设置吗？",
-    ["OPTIONS_RESET_DONE"]      = "角色设置已重置。",
+    ["OPTIONS_RESET_DONE"]      = "当前角色的设置已重置。",
 
     --------------------------------------------------------------------
     -- Status Messages
@@ -101,13 +98,5 @@ NS:RegisterLocale("zhCN", {
     ["ERR_PROTECTED_ACTION"]    = "操作被阻止：战斗锁定期间调用了受保护的函数。",
     ["ERR_INVALID_ARG"]         = "传递给 %s 的参数无效。",
     ["ERR_MODULE_NOT_FOUND"]    = "未找到模块 \"%s\"。",
-
-    --------------------------------------------------------------------
-    -- Confirmation Dialogs
-    --------------------------------------------------------------------
-    ["CONFIRM_YES"]             = "是",
-    ["CONFIRM_NO"]              = "否",
-    ["CONFIRM_OK"]              = "确定",
-    ["CONFIRM_CANCEL"]          = "取消",
 
 }, false) -- false = non-default override locale

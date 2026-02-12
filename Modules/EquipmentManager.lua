@@ -183,19 +183,12 @@ function EquipmentManager:CreateSet(name, iconID)
         return false, Utils:SafeFormat(L["EQUIP_SET_CREATE_FAILED"], name)
     end
 
-    -- Verify creation by looking up the new set
-    -- Small delay may be needed; we verify synchronously first
-    local created = self:FindSetByName(name)
-    if created then
-        NS:DebugPrint("EquipmentManager:CreateSet — success:", name, "icon:", iconID)
-        local iconStr = Utils:GetIconString(iconID)
-        NS:Print(Utils:SafeFormat(L["EQUIP_SET_CREATED"], name, iconStr))
-        return true, Utils:SafeFormat(L["EQUIP_SET_CREATED"], name, iconStr)
-    end
-
-    -- Rare case: API did not error but set was not found
-    NS:DebugPrint("EquipmentManager:CreateSet — creation returned OK but set not found.")
-    return false, Utils:SafeFormat(L["EQUIP_SET_CREATE_FAILED"], name)
+    -- Creation is asynchronous in WoW 12.0+, trust the API return
+    -- and show success message immediately
+    NS:DebugPrint("EquipmentManager:CreateSet — API called successfully:", name, "icon:", iconID)
+    local iconStr = Utils:GetIconString(iconID)
+    NS:Print(Utils:SafeFormat(L["EQUIP_SET_CREATED"], name, iconStr))
+    return true, Utils:SafeFormat(L["EQUIP_SET_CREATED"], name, iconStr)
 end
 
 ----------------------------------------------------------------------
@@ -294,10 +287,9 @@ end
 function EquipmentManager:OnSpecChanged()
     NS:DebugPrint("EquipmentManager:OnSpecChanged triggered.")
 
-    -- Check if auto-swap is enabled (default: true)
+    -- Check if auto-swap is enabled (default: true per DB_DEFAULTS)
     local autoSwap = true
     if NS.db and NS.db.global then
-        -- autoSwap is nil by default (not in DB_DEFAULTS), treat nil as true
         if NS.db.global.autoSwap == false then
             autoSwap = false
         end
@@ -330,7 +322,7 @@ function EquipmentManager:CreateSpecSet()
     -- Refresh spec data to ensure accuracy
     local specMod = NS:GetModule("SpecManager")
     if not specMod then
-        return false, L["ERR_MODULE_NOT_FOUND"]:format("SpecManager")
+        return false, Utils:SafeFormat(L["ERR_MODULE_NOT_FOUND"], "SpecManager")
     end
 
     local refreshOK = specMod:RefreshSpecData()
@@ -362,6 +354,38 @@ function EquipmentManager:CreateSpecSet()
     end
 
     return success, message
+end
+
+----------------------------------------------------------------------
+-- 7a. Save Current Spec Set (New Feature)
+----------------------------------------------------------------------
+
+--- Save the current gear to the set matching the current spec.
+--- @return boolean  true if a set was found and saved
+function EquipmentManager:SaveCurrentSpecSet()
+    local specMod = NS:GetModule("SpecManager")
+    if not specMod then return false end
+
+    local specName = specMod:GetResolvedSpecName()
+    if not specName then
+        NS:Print(L["ERR_NO_SPEC"])
+        return false
+    end
+
+    -- Try resolved name
+    if self:SetExists(specName) then
+        return self:SaveSet(specName)
+    end
+
+    -- Try fallback name
+    local altEnglish, altLocal = specMod:GetBothNames()
+    local altName = (specName == altEnglish) and altLocal or altEnglish
+    if altName and self:SetExists(altName) then
+        return self:SaveSet(altName)
+    end
+
+    NS:Print(Utils:SafeFormat(L["EQUIP_SET_NOT_FOUND"], specName))
+    return false
 end
 
 ----------------------------------------------------------------------
@@ -424,6 +448,7 @@ function EquipmentManager:SaveSet(name)
     end
 
     NS:DebugPrint("EquipmentManager:SaveSet — set saved:", name)
+    NS:Print(Utils:SafeFormat(L["EQUIP_SET_SAVED"], name))
     return true
 end
 

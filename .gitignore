@@ -1,6 +1,8 @@
-.DS_Store
-Thumbs.db
-*.bak
-*.tmp
+# Editors
 .vscode/
 .idea/
+
+# WoW / System
+*.bak
+*.tmp
+.DS_Store

@@ -40,12 +40,26 @@ NS.UIHook    = UIHook
 local isInjected = false
 
 --- Reference to our custom button frame.
---- @type Button|nil
+--- @type ChromatixSpecButton|nil
 local specSetButton = nil
+
+--- Whether CharacterFrame:OnShow has been hooked (prevents duplicate hooks).
+--- @type boolean
+local isCharFrameHooked = false
+
+--- Whether EquipmentManagerPane:OnShow has been hooked (prevents duplicate hooks).
+--- @type boolean
+local isEqPaneHooked = false
 
 ----------------------------------------------------------------------
 -- 3. Button Factory
 ----------------------------------------------------------------------
+
+--- @class ChromatixSpecButton : Button
+--- @field bgNormal Texture
+--- @field bgPushed Texture
+--- @field icon Texture
+--- @field label FontString
 
 --- Create the "New Spec Set" button styled to match the native
 --- "New Set" (新的方案) button in the Equipment Manager pane.
@@ -56,10 +70,10 @@ local specSetButton = nil
 ---
 --- @param parentFrame Frame  The Equipment Manager pane frame
 --- @param anchorBelow Frame  The native "New Set" button to anchor below
---- @return Button             The created button
+--- @return ChromatixSpecButton             The created button
 local function CreateSpecSetButton(parentFrame, anchorBelow)
     --- Main button frame.
-    --- @type Button
+    --- @type ChromatixSpecButton
     local btn = CreateFrame("Button", "ChromatixNewSpecSetButton", parentFrame)
     btn:SetSize(anchorBelow:GetWidth(), anchorBelow:GetHeight())
     btn:SetPoint("TOPLEFT", anchorBelow, "BOTTOMLEFT", 0, -2)
@@ -207,9 +221,9 @@ local function CreateSpecSetButton(parentFrame, anchorBelow)
         end
 
         -- Refresh the parent equipment list if possible
-        if PaperDollEquipmentManagerPane and
-           type(PaperDollEquipmentManagerPane.Update) == "function" then
-            local ok, err = pcall(PaperDollEquipmentManagerPane.Update, PaperDollEquipmentManagerPane)
+        local pane = (PaperDollFrame and PaperDollFrame.EquipmentManagerPane) or _G["PaperDollEquipmentManagerPane"]
+        if pane and type(pane.Update) == "function" then
+            local ok, err = pcall(pane.Update, pane)
             if not ok then
                 NS:DebugPrint("UIHook: failed to refresh equipment pane:", tostring(err))
             end
@@ -224,11 +238,10 @@ end
 -- 4. Injection Logic
 ----------------------------------------------------------------------
 
---- Attempt to find the native "New Set" button in the Equipment
---- Manager pane and inject our custom button below it.
+--- Attempt to inject our custom button into the Equipment Manager pane.
 ---
---- The function probes several known frame paths to remain robust
---- across minor UI structure changes between patches.
+--- WoW 12.0+: The pane is accessed via PaperDollFrame.EquipmentManagerPane
+--- and we anchor next to the EquipSet button.
 ---
 --- @return boolean  true if injection succeeded
 local function TryInjectButton()
@@ -237,77 +250,71 @@ local function TryInjectButton()
     end
 
     ---------------------------------------------------------------------------
-    -- 4.1 Locate the Equipment Manager Pane
+    -- 4.1 Locate the Equipment Manager Pane (WoW 12.0+ structure)
     ---------------------------------------------------------------------------
 
     --- @type Frame|nil
-    local eqPane = PaperDollEquipmentManagerPane
+    local eqPane = PaperDollFrame and PaperDollFrame.EquipmentManagerPane
     if not eqPane then
-        NS:DebugPrint("UIHook:TryInjectButton — PaperDollEquipmentManagerPane not found.")
+        NS:DebugPrint("UIHook:TryInjectButton — PaperDollFrame.EquipmentManagerPane not found.")
         return false
     end
 
     ---------------------------------------------------------------------------
-    -- 4.2 Locate the native "New Set" button
+    -- 4.2 Find the "New Set" button in ScrollTarget (last child)
     ---------------------------------------------------------------------------
 
-    --- Try multiple known paths for the "New Set" button.
-    --- @type Button|nil
-    local newSetBtn = nil
-
-    -- Path 1: Direct child reference
-    if eqPane.NewSetButton then
-        newSetBtn = eqPane.NewSetButton
-    end
-
-    -- Path 2: Global name lookup
-    if not newSetBtn and PaperDollEquipmentManagerPaneNewSetButton then
-        newSetBtn = PaperDollEquipmentManagerPaneNewSetButton
-    end
-
-    -- Path 3: Search children by button text pattern
-    if not newSetBtn then
-        local children = { eqPane:GetChildren() }
-        for _, child in ipairs(children) do
-            if child:IsObjectType("Button") then
-                local text = ""
-                -- Try to read button text from various known sub-elements
-                if child.Text then
-                    text = child.Text:GetText() or ""
-                elseif child.GetText and type(child.GetText) == "function" then
-                    text = child:GetText() or ""
-                end
-                -- Match common text variants ("New Set", "新的方案", etc.)
-                if text:find("New") or text:find("新的方案") or text:find("新") then
-                    newSetBtn = child
-                    break
-                end
-            end
-        end
-    end
-
-    if not newSetBtn then
-        NS:DebugPrint("UIHook:TryInjectButton — could not locate native 'New Set' button.")
-        -- Fallback: anchor to the bottom of the equipment pane itself
-        NS:DebugPrint("UIHook:TryInjectButton — falling back to pane bottom anchor.")
-
+    local scrollTarget = eqPane.ScrollBox and eqPane.ScrollBox.ScrollTarget
+    if not scrollTarget then
+        NS:DebugPrint("UIHook:TryInjectButton — ScrollTarget not found.")
         specSetButton = CreateSpecSetButton(eqPane, eqPane)
         specSetButton:ClearAllPoints()
-        specSetButton:SetSize(eqPane:GetWidth() - 4, 36)
-        specSetButton:SetPoint("BOTTOMLEFT", eqPane, "BOTTOMLEFT", 2, 4)
+        specSetButton:SetSize(169, 44)
+        specSetButton:SetPoint("BOTTOMLEFT", eqPane, "BOTTOMLEFT", 4, 4)
         isInjected = true
         return true
     end
 
     ---------------------------------------------------------------------------
-    -- 4.3 Create and position our button
+    -- 4.3 Create button and update position/size dynamically
     ---------------------------------------------------------------------------
 
-    specSetButton = CreateSpecSetButton(eqPane, newSetBtn)
-    specSetButton:SetSize(newSetBtn:GetWidth(), newSetBtn:GetHeight())
-    isInjected = true
+    specSetButton = CreateSpecSetButton(scrollTarget, scrollTarget)
 
-    NS:DebugPrint("UIHook:TryInjectButton — injection successful below native 'New Set' button.")
+    -- Function to find "New Set" button and match its size/position
+    local function UpdateButtonPosition()
+        local children = {scrollTarget:GetChildren()}
+        local newSetBtn = nil
+        for i = #children, 1, -1 do
+            local child = children[i]
+            if child ~= specSetButton and child:IsShown() then
+                newSetBtn = child
+                break
+            end
+        end
+        if newSetBtn then
+            -- Match the system button's size dynamically
+            local width, height = newSetBtn:GetSize()
+            specSetButton:SetSize(width, height)
+            specSetButton:ClearAllPoints()
+            specSetButton:SetPoint("TOPLEFT", newSetBtn, "BOTTOMLEFT", 0, -2)
+            NS:DebugPrint("UIHook: button size updated to", width, "x", height)
+        end
+    end
+
+    -- Initial positioning
+    UpdateButtonPosition()
+
+    -- Hook ScrollTarget to reposition when children change
+    scrollTarget:HookScript("OnShow", UpdateButtonPosition)
+    if eqPane.ScrollBox.Update then
+        hooksecurefunc(eqPane.ScrollBox, "Update", function()
+            Utils:After(0.1, UpdateButtonPosition)
+        end)
+    end
+
+    isInjected = true
+    NS:DebugPrint("UIHook:TryInjectButton — injection successful below New Set button.")
     return true
 end
 
@@ -323,31 +330,32 @@ end
 
 --- Strategy A: Direct attempt + hooking CharacterFrame events.
 local function SetupInjectionHooks()
+    -- WoW 12.0+: pane is accessed via PaperDollFrame.EquipmentManagerPane
+    local eqPane = PaperDollFrame and PaperDollFrame.EquipmentManagerPane
+
     -- If the pane already exists (e.g. /reload), inject immediately
-    if PaperDollEquipmentManagerPane then
+    if eqPane then
         TryInjectButton()
     end
 
     -- Hook CharacterFrame:Show (or OnShow) to catch when the panel opens
-    if CharacterFrame then
-        local hooked = false
-        if not hooked then
-            CharacterFrame:HookScript("OnShow", function()
-                if not isInjected then
-                    -- Small delay to ensure children are fully initialized
-                    Utils:After(0.1, function()
-                        TryInjectButton()
-                    end)
-                end
-            end)
-            hooked = true
-            NS:DebugPrint("UIHook: hooked CharacterFrame:OnShow.")
-        end
+    if CharacterFrame and not isCharFrameHooked then
+        CharacterFrame:HookScript("OnShow", function()
+            if not isInjected then
+                -- Small delay to ensure children are fully initialized
+                Utils:After(0.1, function()
+                    TryInjectButton()
+                end)
+            end
+        end)
+        isCharFrameHooked = true
+        NS:DebugPrint("UIHook: hooked CharacterFrame:OnShow.")
     end
 
     -- Hook the Equipment Manager pane's OnShow specifically
-    if PaperDollEquipmentManagerPane then
-        PaperDollEquipmentManagerPane:HookScript("OnShow", function()
+    eqPane = PaperDollFrame and PaperDollFrame.EquipmentManagerPane
+    if eqPane and not isEqPaneHooked then
+        eqPane:HookScript("OnShow", function()
             if not isInjected then
                 TryInjectButton()
             end
@@ -356,7 +364,8 @@ local function SetupInjectionHooks()
                 specSetButton:Show()
             end
         end)
-        NS:DebugPrint("UIHook: hooked PaperDollEquipmentManagerPane:OnShow.")
+        isEqPaneHooked = true
+        NS:DebugPrint("UIHook: hooked PaperDollFrame.EquipmentManagerPane:OnShow.")
     end
 end
 
@@ -390,7 +399,7 @@ local function ScheduleFallbackInjection()
             NS:DebugPrint("UIHook: fallback polling — already injected, stopping.")
             return
         end
-        if PaperDollEquipmentManagerPane then
+        if (PaperDollFrame and PaperDollFrame.EquipmentManagerPane) or _G["PaperDollEquipmentManagerPane"] then
             NS:DebugPrint("UIHook: fallback polling — pane found on attempt", attempts)
             SetupInjectionHooks()
             return

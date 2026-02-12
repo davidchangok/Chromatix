@@ -80,18 +80,18 @@ function SpecManager:RefreshSpecData()
         return false
     end
 
-    -- Resolve English name from the static lookup table
-    local englishName = Utils.SPEC_ID_TO_ENGLISH[specID]
+    -- Resolve English name using Utils (dynamic with fallback)
+    local englishName = Utils:GetEnglishSpecName(specID)
     if not englishName then
-        -- Fallback: use localized name if English map has no entry
+        -- Fallback: use localized name if English name unavailable
         NS:DebugPrint("SpecManager:RefreshSpecData — no English mapping for specID:", specID)
-        englishName = tostring(localName) or "Unknown"
+        englishName = localName and tostring(localName) or "Unknown"
     end
 
     -- Store into cache
     currentSpec.specIndex   = specIndex
     currentSpec.specID      = specID
-    currentSpec.localName   = tostring(localName) or ""
+    currentSpec.localName   = localName and tostring(localName) or ""
     currentSpec.englishName = englishName
     currentSpec.iconID      = (type(iconID) == "number") and iconID or nil
     currentSpec.role        = (type(role) == "string") and role or nil

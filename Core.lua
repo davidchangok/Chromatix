@@ -50,6 +50,7 @@ local DB_DEFAULTS = {
     dbVersion   = NS.DB_VERSION,
     global = {
         namingMode = NS.NAMING_MODE.ENGLISH, -- default to English
+        autoSwap   = true,                   -- default to enabled
         debugMode  = false,
     },
     --- Per-character settings keyed by "Name-Realm"

@@ -4,13 +4,15 @@
 ## Notes-zhCN: 根据当前专精自动切换装备套装。
 ## Author: David W Zhang
 ## Version: 1.0.0
-## X-Website: https://github.com/davidchangok/Chromatix
 ## SavedVariables: ChromatixDB
+## IconTexture: Interface\Icons\INV_Misc_QuestionMark
 
 Core.lua
 Utils.lua
+
 Locales\enUS.lua
 Locales\zhCN.lua
+
 Modules\EventManager.lua
 Modules\SpecManager.lua
 Modules\EquipmentManager.lua

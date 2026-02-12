@@ -193,6 +193,11 @@ end
 -- 5. Addon Lifecycle Bootstrap
 ----------------------------------------------------------------------
 
+--- Store the callback ID so it can self-unregister.
+--- Declared here (before OnAddonLoaded) so the closure can capture the upvalue.
+--- @type string
+local addonLoadedID
+
 --- One-time ADDON_LOADED handler.
 --- Initializes the DB and fires a custom "ready" signal to all modules.
 --- @param event     string  "ADDON_LOADED"
@@ -223,8 +228,6 @@ local function OnAddonLoaded(event, addonName)
     EventManager:UnregisterEvent("ADDON_LOADED", addonLoadedID)
 end
 
---- Store the callback ID so it can self-unregister.
---- @type string
 addonLoadedID = EventManager:RegisterEvent("ADDON_LOADED", OnAddonLoaded, "Core_AddonLoaded")
 
 ----------------------------------------------------------------------
@@ -321,6 +324,7 @@ SlashCmdList["CHROMATIX"] = function(input)
         NS:Print(L["CMD_HELP_CONFIG"])
         NS:Print(L["CMD_HELP_STATUS"])
         NS:Print(L["CMD_HELP_SWAP"])
+        NS:Print(L["CMD_HELP_SAVE"])
         NS:Print(L["CMD_HELP_DEBUG"])
         NS:Print(L["CMD_HELP_RESET"])
 
@@ -330,7 +334,7 @@ SlashCmdList["CHROMATIX"] = function(input)
         if optionsMod and type(optionsMod.Open) == "function" then
             optionsMod:Open()
         else
-            NS:Print(L["ERR_MODULE_NOT_FOUND"]:format("OptionsPanel"))
+            NS:Print(NS.Utils:SafeFormat(L["ERR_MODULE_NOT_FOUND"], "OptionsPanel"))
         end
 
     elseif cmd == "status" then
@@ -343,6 +347,12 @@ SlashCmdList["CHROMATIX"] = function(input)
         local equipMod = NS:GetModule("EquipmentManager")
         if equipMod and type(equipMod.SwapToCurrentSpec) == "function" then
             equipMod:SwapToCurrentSpec()
+        end
+
+    elseif cmd == "save" then
+        local equipMod = NS:GetModule("EquipmentManager")
+        if equipMod and type(equipMod.SaveCurrentSpecSet) == "function" then
+            equipMod:SaveCurrentSpecSet()
         end
 
     elseif cmd == "debug" then

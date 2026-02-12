@@ -20,9 +20,8 @@ NS:RegisterLocale("enUS", {
     --------------------------------------------------------------------
     -- General / Addon Info
     --------------------------------------------------------------------
-    ["ADDON_NAME"]              = "Chromatix",
     ["ADDON_LOADED"]            = "Chromatix v%s loaded. Type /chromatix for help.",
-    ["ADDON_DESCRIPTION"]       = "Automatically equips gear sets based on your current specialization.",
+    ["ADDON_DESCRIPTION"]       = "Automatically equips gear sets based on your current specialization.\nType /chromatix or /ctx for commands.",
 
     --------------------------------------------------------------------
     -- Slash Commands
@@ -33,6 +32,7 @@ NS:RegisterLocale("enUS", {
     ["CMD_HELP_SWAP"]           = "/chromatix swap — Manually trigger gear swap for current spec.",
     ["CMD_HELP_DEBUG"]          = "/chromatix debug — Toggle debug mode.",
     ["CMD_HELP_RESET"]          = "/chromatix reset — Reset current character settings.",
+    ["CMD_HELP_SAVE"]           = "/chromatix save — Save current gear to the active spec's set.",
     ["CMD_UNKNOWN"]             = "Unknown command: %s. Type /chromatix for help.",
 
     --------------------------------------------------------------------
@@ -52,6 +52,7 @@ NS:RegisterLocale("enUS", {
     ["EQUIP_SET_CREATED"]       = "New equipment set \"%s\" created with icon %s.",
     ["EQUIP_SET_CREATE_FAILED"] = "Failed to create equipment set \"%s\".",
     ["EQUIP_SET_ALREADY_EXISTS"]= "Equipment set \"%s\" already exists.",
+    ["EQUIP_SET_SAVED"]         = "Equipment set \"%s\" updated.",
     ["EQUIP_COMBAT_DEFERRED"]   = "In combat — gear swap deferred until combat ends.",
     ["EQUIP_COMBAT_RESUMED"]    = "Combat ended — applying deferred gear swap.",
     ["EQUIP_MAX_SETS"]          = "Maximum number of equipment sets reached. Cannot create a new set.",
@@ -67,19 +68,15 @@ NS:RegisterLocale("enUS", {
     -- Options Panel
     --------------------------------------------------------------------
     ["OPTIONS_TITLE"]           = "Chromatix Settings",
-    ["OPTIONS_GENERAL"]         = "General",
     ["OPTIONS_NAMING_MODE"]     = "Set Naming Mode",
     ["OPTIONS_NAMING_DESC"]     = "Choose whether equipment set names use English spec names (e.g. \"Retribution\") or localized names (e.g. \"惩戒\").",
+    ["OPTIONS_AUTO_SWAP"]       = "Auto Swap Gear",
+    ["OPTIONS_AUTO_SWAP_DESC"]  = "Automatically equip the linked set when changing specialization.",
     ["OPTIONS_NAMING_ENGLISH"]  = "English",
     ["OPTIONS_NAMING_LOCALIZED"]= "Localized",
     ["OPTIONS_DEBUG_MODE"]      = "Debug Mode",
     ["OPTIONS_DEBUG_DESC"]      = "Enable verbose debug messages in the chat frame.",
-    ["OPTIONS_AUTO_SWAP"]       = "Auto Swap on Spec Change",
-    ["OPTIONS_AUTO_SWAP_DESC"]  = "Automatically equip the linked gear set when you change specializations.",
-    ["OPTIONS_RESET"]           = "Reset Character Settings",
-    ["OPTIONS_RESET_DESC"]      = "Clear all spec-to-set mappings for this character.",
-    ["OPTIONS_RESET_CONFIRM"]   = "Are you sure you want to reset all Chromatix settings for this character?",
-    ["OPTIONS_RESET_DONE"]      = "Character settings have been reset.",
+    ["OPTIONS_RESET_DONE"]      = "Current character settings have been reset.",
 
     --------------------------------------------------------------------
     -- Status Messages
@@ -101,13 +98,5 @@ NS:RegisterLocale("enUS", {
     ["ERR_PROTECTED_ACTION"]    = "Action blocked: protected function called during combat lockdown.",
     ["ERR_INVALID_ARG"]         = "Invalid argument supplied to %s.",
     ["ERR_MODULE_NOT_FOUND"]    = "Module \"%s\" not found.",
-
-    --------------------------------------------------------------------
-    -- Confirmation Dialogs
-    --------------------------------------------------------------------
-    ["CONFIRM_YES"]             = "Yes",
-    ["CONFIRM_NO"]              = "No",
-    ["CONFIRM_OK"]              = "OK",
-    ["CONFIRM_CANCEL"]          = "Cancel",
 
 }, true) -- true = default/fallback locale
