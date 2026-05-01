@@ -6,7 +6,7 @@
   for other modules to query current spec info.
 
   Author : David W Zhang
-  Version: 1.0.0
+  Version: 1.1
   License: MIT
   Repo   : https://github.com/davidchangok/Chromatix
 ================================================================================

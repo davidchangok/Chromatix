@@ -13,7 +13,7 @@
   attempting any UI modifications, ensuring safe load-order behavior.
 
   Author : David W Zhang
-  Version: 1.0.0
+  Version: 1.1
   License: MIT
   Repo   : https://github.com/davidchangok/Chromatix
 ================================================================================
@@ -50,6 +50,18 @@ local isCharFrameHooked = false
 --- Whether EquipmentManagerPane:OnShow has been hooked (prevents duplicate hooks).
 --- @type boolean
 local isEqPaneHooked = false
+
+--- Resolve the Equipment Manager pane, trying multiple access paths
+--- for forward compatibility with different WoW UI versions.
+--- @return Frame|nil
+local function GetEquipmentManagerPane()
+	if PaperDollFrame then
+		return PaperDollFrame.EquipmentManagerPane
+			or PaperDollFrame.EquipmentFlyout
+			or _G["PaperDollEquipmentManagerPane"]
+	end
+	return _G["PaperDollEquipmentManagerPane"]
+end
 
 ----------------------------------------------------------------------
 -- 3. Button Factory
@@ -220,13 +232,18 @@ local function CreateSpecSetButton(parentFrame, anchorBelow)
             NS:Print(message)
         end
 
-        -- Refresh the parent equipment list if possible
-        local pane = (PaperDollFrame and PaperDollFrame.EquipmentManagerPane) or _G["PaperDollEquipmentManagerPane"]
-        if pane and type(pane.Update) == "function" then
-            local ok, err = pcall(pane.Update, pane)
-            if not ok then
-                NS:DebugPrint("UIHook: failed to refresh equipment pane:", tostring(err))
-            end
+        -- Refresh the parent equipment list after a short delay
+        -- (set creation is asynchronous in 12.0+)
+        if success then
+            Utils:After(0.3, function()
+                local pane = GetEquipmentManagerPane()
+                if pane and type(pane.Update) == "function" then
+                    local ok, err = pcall(pane.Update, pane)
+                    if not ok then
+                        NS:DebugPrint("UIHook: failed to refresh equipment pane:", tostring(err))
+                    end
+                end
+            end)
         end
     end)
 
@@ -254,7 +271,7 @@ local function TryInjectButton()
     ---------------------------------------------------------------------------
 
     --- @type Frame|nil
-    local eqPane = PaperDollFrame and PaperDollFrame.EquipmentManagerPane
+    local eqPane = GetEquipmentManagerPane()
     if not eqPane then
         NS:DebugPrint("UIHook:TryInjectButton — PaperDollFrame.EquipmentManagerPane not found.")
         return false
@@ -285,9 +302,12 @@ local function TryInjectButton()
     local function UpdateButtonPosition()
         local children = {scrollTarget:GetChildren()}
         local newSetBtn = nil
+        -- Find the last visible Button that is not our injected button
         for i = #children, 1, -1 do
             local child = children[i]
-            if child ~= specSetButton and child:IsShown() then
+            if child ~= specSetButton
+                and child:IsShown()
+                and child:IsObjectType("Button") then
                 newSetBtn = child
                 break
             end
@@ -331,7 +351,7 @@ end
 --- Strategy A: Direct attempt + hooking CharacterFrame events.
 local function SetupInjectionHooks()
     -- WoW 12.0+: pane is accessed via PaperDollFrame.EquipmentManagerPane
-    local eqPane = PaperDollFrame and PaperDollFrame.EquipmentManagerPane
+    local eqPane = GetEquipmentManagerPane()
 
     -- If the pane already exists (e.g. /reload), inject immediately
     if eqPane then
@@ -353,7 +373,7 @@ local function SetupInjectionHooks()
     end
 
     -- Hook the Equipment Manager pane's OnShow specifically
-    eqPane = PaperDollFrame and PaperDollFrame.EquipmentManagerPane
+    eqPane = GetEquipmentManagerPane()
     if eqPane and not isEqPaneHooked then
         eqPane:HookScript("OnShow", function()
             if not isInjected then
@@ -374,10 +394,8 @@ end
 --- @param event     string  "ADDON_LOADED"
 --- @param addonName string  Name of the addon that just loaded
 local function OnAddonLoaded(event, addonName)
-    -- The character panel lives in Blizzard_CharacterUI (or Blizzard_GearManager)
-    if addonName == "Blizzard_CharacterUI"
-        or addonName == "Blizzard_GearManager"
-        or addonName == "Blizzard_PaperDollUI" then
+    -- Character panel lives in Blizzard_CharacterUI (LoD addon)
+    if addonName == "Blizzard_CharacterUI" then
 
         NS:DebugPrint("UIHook: detected load of", addonName, "— attempting injection.")
         Utils:After(0.2, function()
@@ -399,7 +417,7 @@ local function ScheduleFallbackInjection()
             NS:DebugPrint("UIHook: fallback polling — already injected, stopping.")
             return
         end
-        if (PaperDollFrame and PaperDollFrame.EquipmentManagerPane) or _G["PaperDollEquipmentManagerPane"] then
+        if GetEquipmentManagerPane() then
             NS:DebugPrint("UIHook: fallback polling — pane found on attempt", attempts)
             SetupInjectionHooks()
             return

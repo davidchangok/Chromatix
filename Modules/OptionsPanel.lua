@@ -4,7 +4,7 @@
   Settings panel using the modern Settings API (Interface 120000+).
 
   Author : David W Zhang
-  Version: 1.0.0
+  Version: 1.1
   License: MIT
   Repo   : https://github.com/davidchangok/Chromatix
 ================================================================================
@@ -61,9 +61,13 @@ function OptionsPanel:BuildPanel()
     -- 3.2 Register with Settings API
     ---------------------------------------------------------------------------
 
-    local category, layout = Settings.RegisterCanvasLayoutCategory(optionsFrame, NS.ADDON_NAME)
+    local ok, category, layout = pcall(Settings.RegisterCanvasLayoutCategory, optionsFrame, NS.ADDON_NAME)
+    if not ok or not category then
+        NS:DebugPrint("OptionsPanel:BuildPanel — Settings.RegisterCanvasLayoutCategory failed.")
+        return
+    end
     categoryID = category:GetID()
-    Settings.RegisterAddOnCategory(category)
+    pcall(Settings.RegisterAddOnCategory, category)
 
     NS:DebugPrint("OptionsPanel: registered with Settings API, categoryID:", categoryID)
 
@@ -142,20 +146,22 @@ function OptionsPanel:BuildPanel()
         btnLocalized:SetChecked(mode == NS.NAMING_MODE.LOCALIZED)
     end
 
-    btnEnglish:SetScript("OnClick", function()
-        if NS.db and NS.db.global then
-            NS.db.global.namingMode = NS.NAMING_MODE.ENGLISH
+    btnEnglish:HookScript("OnClick", function(self)
+        if self:GetChecked() then
+            if NS.db and NS.db.global then
+                NS.db.global.namingMode = NS.NAMING_MODE.ENGLISH
+            end
+            NS:DebugPrint("OptionsPanel: naming mode → english")
         end
-        UpdateNamingMode()
-        NS:DebugPrint("OptionsPanel: naming mode → english")
     end)
 
-    btnLocalized:SetScript("OnClick", function()
-        if NS.db and NS.db.global then
-            NS.db.global.namingMode = NS.NAMING_MODE.LOCALIZED
+    btnLocalized:HookScript("OnClick", function(self)
+        if self:GetChecked() then
+            if NS.db and NS.db.global then
+                NS.db.global.namingMode = NS.NAMING_MODE.LOCALIZED
+            end
+            NS:DebugPrint("OptionsPanel: naming mode → localized")
         end
-        UpdateNamingMode()
-        NS:DebugPrint("OptionsPanel: naming mode → localized")
     end)
 
     namingFrame:SetScript("OnShow", UpdateNamingMode)

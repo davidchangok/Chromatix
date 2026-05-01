@@ -5,7 +5,7 @@
   All keys defined here MUST exist; other locale files override as needed.
 
   Author : David W Zhang
-  Version: 1.0.0
+  Version: 1.1
   License: MIT
   Repo   : https://github.com/davidchangok/Chromatix
 ================================================================================

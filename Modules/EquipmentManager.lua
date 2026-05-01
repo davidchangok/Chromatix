@@ -11,7 +11,7 @@
     - Defer all protected actions until out of combat
 
   Author : David W Zhang
-  Version: 1.0.0
+  Version: 1.1
   License: MIT
   Repo   : https://github.com/davidchangok/Chromatix
 ================================================================================
@@ -34,9 +34,9 @@ NS.EquipmentManager    = EquipmentManager
 ----------------------------------------------------------------------
 
 --- Maximum number of equipment sets allowed by the game client.
---- As of Interface 120000, the limit is 10.
+--- Verify against current game version; 12.0+ may support more.
 --- @type number
-local MAX_EQUIPMENT_SETS = 10
+local MAX_EQUIPMENT_SETS = 50
 
 ----------------------------------------------------------------------
 -- 3. Equipment Set Query Helpers
@@ -439,7 +439,7 @@ function EquipmentManager:SaveSet(name)
     end
 
     local ok, err = Utils:SafeCall(
-        C_EquipmentSet.SaveEquipmentSet, info.setID, info.iconID
+        C_EquipmentSet.SaveEquipmentSet, info.setID
     )
 
     if not ok then

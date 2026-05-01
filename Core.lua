@@ -4,7 +4,7 @@
   Core namespace, addon initialization, and SavedVariables management.
 
   Author : David W Zhang
-  Version: 1.0.0
+  Version: 1.1
   License: MIT
   Repo   : https://github.com/davidchangok/Chromatix
 ================================================================================
@@ -28,7 +28,7 @@ ChromatixNS = NS
 
 --- @class ChromatixConstants
 NS.ADDON_NAME    = ADDON_NAME
-NS.VERSION       = "1.0.0"
+NS.VERSION       = "1.1"
 NS.INTERFACE     = 120000
 NS.AUTHOR        = "David W Zhang"
 NS.DB_VERSION    = 1
@@ -140,6 +140,21 @@ local function MergeDefaults(target, defaults)
     return target
 end
 
+--- Migration registry: DB-version → migration function.
+--- Each migration function receives ChromatixDB and upgrades it to the next version.
+--- @type table<number, function>
+NS.migrations = {}
+
+--- Register a DB migration function for a specific target version.
+--- @param targetVersion number    The DB version this migration upgrades TO
+--- @param migration     function  Migration function: func(ChromatixDB) → void
+function NS:RegisterMigration(targetVersion, migration)
+    if type(targetVersion) ~= "number" or type(migration) ~= "function" then
+        return
+    end
+    self.migrations[targetVersion] = migration
+end
+
 --- Initialize or migrate ChromatixDB.
 --- Called once on ADDON_LOADED.
 function NS:InitializeDB()
@@ -151,10 +166,23 @@ function NS:InitializeDB()
     -- Merge defaults (non-destructive)
     MergeDefaults(ChromatixDB, DB_DEFAULTS)
 
-    -- DB version migration placeholder
+    -- DB version migration
     local storedVersion = ChromatixDB.dbVersion or 0
     if storedVersion < NS.DB_VERSION then
-        -- Future: migration logic per version increment
+        -- Run registered migrations sequentially
+        if NS.migrations then
+            for v = storedVersion + 1, NS.DB_VERSION do
+                local migration = NS.migrations[v]
+                if migration and type(migration) == "function" then
+                    local ok, err = pcall(migration, ChromatixDB)
+                    if ok then
+                        NS:DebugPrint("DB migration to v" .. v .. " applied.")
+                    else
+                        NS:DebugPrint("DB migration to v" .. v .. " failed:", tostring(err))
+                    end
+                end
+            end
+        end
         ChromatixDB.dbVersion = NS.DB_VERSION
     end
 
@@ -169,7 +197,7 @@ function NS:GetCharacterDB()
     if not key then
         -- Fallback: return a transient table to avoid nil errors
         NS:DebugPrint("GetCharacterDB: character key unavailable, using transient table.")
-        return {}
+        return { specSets = {} }
     end
     if not self.db.characters[key] then
         self.db.characters[key] = {

@@ -3,7 +3,7 @@
 ## Notes: Automatically equips gear sets based on your current specialization.
 ## Notes-zhCN: 根据当前专精自动切换装备套装。
 ## Author: David W Zhang
-## Version: 1.0.0
+## Version: 1.1
 ## SavedVariables: ChromatixDB
 ## IconTexture: Interface\Icons\INV_Misc_QuestionMark
 

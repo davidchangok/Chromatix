@@ -4,7 +4,7 @@
   General-purpose utility functions shared across all modules.
 
   Author : David W Zhang
-  Version: 1.0.0
+  Version: 1.1
   License: MIT
   Repo   : https://github.com/davidchangok/Chromatix
 ================================================================================
@@ -139,18 +139,7 @@ function Utils:SafeCall(func, ...)
 end
 
 ----------------------------------------------------------------------
--- 5. Combat State Helper
-----------------------------------------------------------------------
-
---- Check whether the player is currently in combat lockdown.
---- @return boolean  true if in combat lockdown
-function Utils:IsInCombatLockdown()
-    local ok, result = self:SafeCall(InCombatLockdown)
-    return ok and result or false
-end
-
-----------------------------------------------------------------------
--- 6. Specialization Name API (Dynamic with fallback)
+-- 5. Specialization Name API (Dynamic with fallback)
 ----------------------------------------------------------------------
 
 --- Cache for English spec names (populated dynamically or from fallback)
@@ -253,11 +242,11 @@ function Utils:GetLocalizedSpecName(specID)
     return name
 end
 
--- Keep SPEC_ID_TO_ENGLISH for backward compatibility
-Utils.SPEC_ID_TO_ENGLISH = ENGLISH_FALLBACK
+-- Keep SPEC_ID_TO_ENGLISH for backward compatibility (shallow copy)
+Utils.SPEC_ID_TO_ENGLISH = Utils:ShallowCopy(ENGLISH_FALLBACK)
 
 ----------------------------------------------------------------------
--- 7. Icon Texture Helper
+-- 6. Icon Texture Helper
 ----------------------------------------------------------------------
 
 --- Wrap a texture ID into an inline icon string for chat/UI display.
@@ -273,7 +262,7 @@ function Utils:GetIconString(iconID, size)
 end
 
 ----------------------------------------------------------------------
--- 8. Delayed Execution
+-- 7. Delayed Execution
 ----------------------------------------------------------------------
 
 --- Execute a callback after a specified delay using C_Timer.
@@ -294,7 +283,7 @@ function Utils:After(delay, callback)
 end
 
 ----------------------------------------------------------------------
--- 9. Color Formatting
+-- 8. Color Formatting
 ----------------------------------------------------------------------
 
 --- Wrap text in a WoW color escape sequence.
